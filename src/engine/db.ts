@@ -1,4 +1,4 @@
-import { PGlite } from "@electric-sql/pglite";
+import { PGlite, type PGliteOptions } from "@electric-sql/pglite";
 import type { Mode } from "./types";
 
 const CLIENT_ROLES = "anon, authenticated, service_role";
@@ -12,6 +12,13 @@ export async function setDefaultPrivileges(db: PGlite, mode: Mode): Promise<void
       ? `${base} grant ${TABLE_PRIVS} on tables to ${CLIENT_ROLES};`
       : `${base} revoke ${TABLE_PRIVS} on tables from ${CLIENT_ROLES};`,
   );
+}
+
+/** Browser only: compile the 10 MB wasm and fetch its data bundle once, then share them across every instance. */
+type SharedAssets = Pick<PGliteOptions, "pgliteWasmModule" | "initdbWasmModule" | "fsBundle">;
+let shared: SharedAssets = {};
+export function setSharedAssets(a: SharedAssets): void {
+  shared = a;
 }
 
 const SETUP_SQL = `
@@ -29,21 +36,28 @@ const SETUP_SQL = `
 // Each world is still its own PGlite instance with its own data directory.
 let template: Promise<Blob | File> | undefined;
 
+/** Use a prebuilt template (the browser fetches public/pg-template.tar.gz) instead of running initdb. */
+export function setTemplate(t: Blob | File): void {
+  template = Promise.resolve(t);
+}
+
+export async function buildTemplate(): Promise<Blob | File> {
+  const seed = new PGlite({ ...shared });
+  await seed.waitReady;
+  await seed.exec(SETUP_SQL);
+  const dump = await seed.dumpDataDir("gzip");
+  await seed.close();
+  return dump;
+}
+
 function getTemplate(): Promise<Blob | File> {
-  template ??= (async () => {
-    const seed = new PGlite();
-    await seed.waitReady;
-    await seed.exec(SETUP_SQL);
-    const dump = await seed.dumpDataDir("none");
-    await seed.close();
-    return dump;
-  })();
+  template ??= buildTemplate();
   return template;
 }
 
 /** Fresh in-memory Postgres with the three API roles, an auth.uid() shim and the chosen default grants. */
 export async function newDb(mode: Mode): Promise<PGlite> {
-  const db = new PGlite({ loadDataDir: await getTemplate() });
+  const db = new PGlite({ ...shared, loadDataDir: await getTemplate() });
   await db.waitReady;
   if (mode === "legacy") await setDefaultPrivileges(db, "legacy");
   return db;
