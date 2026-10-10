@@ -4,5 +4,7 @@
   "name": "grant-drift-cloudflare",
   "compatibility_date": "2026-10-01",
   // Static site: no Worker script, just the Vite build output.
-  "assets": { "directory": "./dist" }
+  "assets": { "directory": "./dist" },
+  // Build here too, so a dashboard with an empty build command still deploys a real site.
+  "build": { "command": "npm ci && npm run build" }
 }
