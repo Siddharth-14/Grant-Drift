@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Must match the Worker name in the Cloudflare dashboard, or Workers Builds refuses to deploy.
+  "name": "grant-drift-cloudflare",
+  "compatibility_date": "2026-10-01",
+  // Static site: no Worker script, just the Vite build output.
+  "assets": { "directory": "./dist" }
+}
