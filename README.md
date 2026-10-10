@@ -65,7 +65,7 @@ npx tsx scripts/make-template.ts      # public/pg-template.tar.gz, only after up
 
 `wrangler.jsonc` publishes `dist/` as static assets, so both routes work:
 
-- **Workers Builds (Git import):** build command `npm run build`, deploy command `npx wrangler deploy`. The `name` in `wrangler.jsonc` must match the Worker's name in the dashboard (`grant-drift-cloudflare`).
+- **Workers Builds (Git import):** deploy command `npx wrangler deploy`. `wrangler.jsonc` runs `npm ci && npm run build` itself, so an empty dashboard build command still works. The `name` in `wrangler.jsonc` must match the Worker's name in the dashboard (`grant-drift-cloudflare`).
 - **Pages:** build command `npm run build`, output directory `dist`.
 
 Both cap a single file at 25 MiB (checked in Cloudflare's docs); the largest file here, `pglite.wasm`, is about 10.1 MB.
