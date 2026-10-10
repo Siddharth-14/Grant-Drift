@@ -61,15 +61,16 @@ npx tsx scripts/make-template.ts      # public/pg-template.tar.gz, only after up
 
 `pg-template.tar.gz` (4.5 MB) is an initdb'd data directory with the roles and `auth.uid()` shim already created. Shipping it saves about 4 s of initdb per visit. Each world is cloned from it into its own instance. Tests fall back to running initdb themselves.
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare)
 
-I could not deploy from the build environment (no Cloudflare credentials, no route to their API), so **the deploy is still to do**:
+`wrangler.jsonc` publishes `dist/` as static assets, so both routes work:
 
-1. Cloudflare dashboard → Workers & Pages → Create → Pages → connect this repo.
-2. Build command `npm run build`, output directory `dist`, Node 20+.
-3. Check the current per-file limit first. The largest file is `pglite.wasm` at about 10.1 MB; at the time of writing Pages documents 25 MiB per file. If it fails, import the repo into Vercel's Hobby tier with the same build settings.
+- **Workers Builds (Git import):** build command `npm run build`, deploy command `npx wrangler deploy`. The `name` in `wrangler.jsonc` must match the Worker's name in the dashboard (`grant-drift-cloudflare`).
+- **Pages:** build command `npm run build`, output directory `dist`.
 
-Then open the URL at desktop and 375 px width and confirm project 1's matrix appears with no interaction. I ran that check against the production build served locally (Chromium via Playwright): the matrix appeared after about 4 s at both widths, and the page made requests only to its own origin. Real network latency on about 20 MB of first-visit downloads will add to that.
+Both cap a single file at 25 MiB (checked in Cloudflare's docs); the largest file here, `pglite.wasm`, is about 10.1 MB.
+
+After deploying, open the URL at desktop and 375 px width and confirm project 1's matrix appears with no interaction. I ran that check against the production build served locally (Chromium via Playwright): the matrix appeared after about 4 s at both widths, and the page made requests only to its own origin. First-visit downloads of about 20 MB add to that on a real network.
 
 ## Deviations from the brief
 
